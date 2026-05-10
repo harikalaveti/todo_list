@@ -1,0 +1,153 @@
+{% extends 'todo_app/base.html' %}
+
+{% block title %}To-Do List{% endblock %}
+
+{% block content %}
+    <div class="task-list">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>My To-Do List</h2>
+            <div>
+                <span class="me-3">Welcome, {{ user.username }}!</span>
+                <a href="?action=logout" class="btn btn-outline-secondary btn-sm">Logout</a>
+            </div>
+        </div>
+        
+        <div class="task-actions mb-3">
+            <button class="btn btn-primary" onclick="showAddTaskForm()">Add New Task</button>
+        </div>
+
+        <!-- Add Task Form (Hidden by default) -->
+        <div id="addTaskForm" style="display: none;" class="card mb-4">
+            <div class="card-header">
+                <h5>Add New Task</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="?action=add_task">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="due_date" class="form-label">Due Date and Time</label>
+                        <input type="datetime-local" class="form-control" id="due_date" name="due_date" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="reminder_set" name="reminder_set">
+                        <label class="form-check-label" for="reminder_set">Set Reminder</label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reminder_time" class="form-label">Reminder Time</label>
+                        <input type="datetime-local" class="form-control" id="reminder_time" name="reminder_time">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Task</button>
+                    <button type="button" class="btn btn-secondary" onclick="hideAddTaskForm()">Cancel</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Overdue Tasks Section -->
+        {% if overdue_tasks %}
+            <div class="alert alert-danger">
+                <h4>⚠️ Overdue Tasks</h4>
+                {% for task in overdue_tasks %}
+                    <div class="task-item border-danger">
+                        <div>
+                            <span class="task-title text-danger fw-bold">{{ task.title }}</span>
+                            <p class="task-description">{{ task.description }}</p>
+                            <small class="text-danger">Due: {{ task.due_date|date:"M d, Y H:i" }} (OVERDUE)</small>
+                            {% if task.reminder_set %}
+                                <br><small class="text-info">🔔 Reminder set for {{ task.reminder_time|date:"M d, Y H:i" }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="task-actions">
+                            <a href="?action=mark_completed&task_id={{ task.pk }}" class="btn btn-success btn-sm">Mark Complete</a>
+                            <a href="?action=edit_task&task_id={{ task.pk }}" class="btn btn-warning btn-sm">Edit</a>
+                            <a href="?action=delete_task&task_id={{ task.pk }}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Due Soon Tasks Section -->
+        {% if due_soon_tasks %}
+            <div class="alert alert-warning">
+                <h4>⏰ Due Soon (Next 24 Hours)</h4>
+                {% for task in due_soon_tasks %}
+                    <div class="task-item border-warning">
+                        <div>
+                            <span class="task-title text-warning fw-bold">{{ task.title }}</span>
+                            <p class="task-description">{{ task.description }}</p>
+                            <small class="text-warning">Due: {{ task.due_date|date:"M d, Y H:i" }}</small>
+                            {% if task.reminder_set %}
+                                <br><small class="text-info">🔔 Reminder set for {{ task.reminder_time|date:"M d, Y H:i" }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="task-actions">
+                            <a href="?action=mark_completed&task_id={{ task.pk }}" class="btn btn-success btn-sm">Mark Complete</a>
+                            <a href="?action=edit_task&task_id={{ task.pk }}" class="btn btn-warning btn-sm">Edit</a>
+                            <a href="?action=delete_task&task_id={{ task.pk }}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- All Tasks Section -->
+        <h4>All Tasks</h4>
+        {% for task in tasks %}
+            <div class="task-item {% if task.completed %}border-success bg-light{% elif task.is_overdue %}border-danger{% elif task.is_due_soon %}border-warning{% endif %}">
+                <div>
+                    <span class="task-title {% if task.completed %}text-muted text-decoration-line-through{% endif %}">
+                        {{ task.title }}
+                    </span>
+                    <p class="task-description">{{ task.description }}</p>
+                    <small class="text-muted">
+                        Due: {{ task.due_date|date:"M d, Y H:i" }}
+                        {% if task.completed %}
+                            <span class="badge bg-success">Completed</span>
+                        {% elif task.is_overdue %}
+                            <span class="badge bg-danger">Overdue</span>
+                        {% elif task.is_due_soon %}
+                            <span class="badge bg-warning">Due Soon</span>
+                        {% endif %}
+                    </small>
+                    {% if task.reminder_set %}
+                        <br><small class="text-info">🔔 Reminder: {{ task.reminder_time|date:"M d, Y H:i" }}</small>
+                    {% endif %}
+                </div>
+                <div class="task-actions">
+                    {% if task.completed %}
+                        <a href="?action=mark_completed&task_id={{ task.pk }}" class="btn btn-outline-info btn-sm">Mark Incomplete</a>
+                    {% else %}
+                        <a href="?action=mark_completed&task_id={{ task.pk }}" class="btn btn-success btn-sm">Mark Complete</a>
+                    {% endif %}
+                    <a href="?action=edit_task&task_id={{ task.pk }}" class="btn btn-warning btn-sm">Edit</a>
+                    <a href="?action=delete_task&task_id={{ task.pk }}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
+                    <a href="?action=toggle_reminder&task_id={{ task.pk }}" class="btn btn-outline-primary btn-sm">
+                        {% if task.reminder_set %}🔕 Disable Reminder{% else %}🔔 Enable Reminder{% endif %}
+                    </a>
+                </div>
+            </div>
+        {% empty %}
+            <div class="text-center p-4">
+                <p class="text-muted">No tasks available. Start by adding a task!</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function showAddTaskForm() {
+            document.getElementById('addTaskForm').style.display = 'block';
+        }
+        
+        function hideAddTaskForm() {
+            document.getElementById('addTaskForm').style.display = 'none';
+        }
+    </script>
+{% endblock %}

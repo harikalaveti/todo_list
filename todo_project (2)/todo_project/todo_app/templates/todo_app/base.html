@@ -1,0 +1,32 @@
+{% load static %}
+{% load django_bootstrap5 %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}To-Do App{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    {% bootstrap_css %}
+</head>
+<body>
+    <header>
+        <h1>{% block header %}To-Do List{% endblock %}</h1>
+    </header>
+
+    <div class="container mt-5">
+        {% bootstrap_messages %}
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <br>
+
+    <footer>
+        <p>&copy; {% now 'Y' %} Your To-Do List App | <a href="#">Privacy Policy</a></p>
+    </footer>
+
+    {% bootstrap_javascript %}
+</body>
+</html>
